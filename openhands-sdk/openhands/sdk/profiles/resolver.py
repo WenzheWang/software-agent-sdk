@@ -50,6 +50,7 @@ from openhands.sdk.skills import Skill
 from openhands.sdk.tool import Tool
 from openhands.sdk.tool.defaults import (
     BROWSER_TOOL_NAME,
+    SUB_AGENT_TOOL_NAME,
     canonical_tool_name,
     resolve_tool_specs,
 )
@@ -234,10 +235,18 @@ def _profile_tool_specs(
     tools: list[Tool] | None, *, browser_available: bool
 ) -> list[Tool]:
     return [
-        spec
+        _scope_sub_agents(spec)
         for spec in resolve_tool_specs(tools, enable_browser=browser_available)
         if browser_available or canonical_tool_name(spec.name) != BROWSER_TOOL_NAME
     ]
+
+
+def _scope_sub_agents(spec: Tool) -> Tool:
+    if spec.name != SUB_AGENT_TOOL_NAME:
+        return spec
+    return spec.model_copy(
+        update={"params": {**spec.params, "restrict_to_parent_tools": True}}
+    )
 
 
 def _build_openhands_settings(
